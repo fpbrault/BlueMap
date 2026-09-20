@@ -75,9 +75,12 @@ public class MCAUtil {
     private static String getLegacyNbtName(Field field) {
         try {
             for (Annotation annotation : field.getDeclaredAnnotations()) {
-                if (!"de.bluecolored.bluenbt.NBTName".equals(annotation.annotationType().getName())) continue;
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+                if (!"NBTName".equals(annotationType.getSimpleName())) continue;
+                if (!annotationType.getPackageName().endsWith(".bluenbt")) continue;
+                if (annotationType.getPackageName().contains(".shadow.")) continue;
 
-                Method valueMethod = annotation.annotationType().getMethod("value");
+                Method valueMethod = annotationType.getMethod("value");
                 Object value = valueMethod.invoke(annotation);
                 if (value instanceof String[] names && names.length > 0) return names[0];
             }
