@@ -25,6 +25,7 @@
 package de.bluecolored.bluemap.core.map.hires.block;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import de.bluecolored.bluemap.core.logger.Logger;
 import de.bluecolored.bluemap.core.map.TextureGallery;
 import de.bluecolored.bluemap.core.map.hires.RenderSettings;
 import de.bluecolored.bluemap.core.map.hires.TileModelView;
@@ -92,8 +93,30 @@ public class BlockStateModelRenderer {
             variantColor.set(0f, 0f, 0f, 0f, true);
 
             Variant variant = variants.get(i);
-            blockRenderers.get(variant.getRenderer())
-                    .render(block, variant, tileModel.initialize(), variantColor);
+            BlockRendererType rendererType = variant.getRenderer();
+            int variantModelStart = tileModel.getTileModel().size();
+
+            try {
+                blockRenderers.get(rendererType)
+                        .render(block, variant, tileModel.initialize(), variantColor);
+            } catch (RuntimeException | LinkageError ex) {
+                tileModel.initialize(variantModelStart).reset();
+                variantColor.set(0f, 0f, 0f, 0f, true);
+
+                String rendererKey = rendererType.getKey().getFormatted();
+                String blockKey = blockState.getId().getFormatted();
+                Logger.global.noFloodError(
+                        "block-renderer-fallback:" + rendererKey + ":" + ex.getClass().getName(),
+                        "Block renderer '%s' failed for '%s'; falling back to BlueMap's default renderer."
+                                .formatted(rendererKey, blockKey),
+                        ex
+                );
+
+                if (rendererType == BlockRendererType.DEFAULT) throw ex;
+
+                blockRenderers.get(BlockRendererType.DEFAULT)
+                        .render(block, variant, tileModel.initialize(), variantColor);
+            }
 
             if (variantColor.a > blockColorOpacity)
                 blockColorOpacity = variantColor.a;
