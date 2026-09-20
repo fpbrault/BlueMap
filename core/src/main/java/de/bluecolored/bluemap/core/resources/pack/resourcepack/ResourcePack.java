@@ -389,6 +389,27 @@ public class ResourcePack extends Pack {
         return blockColorsConfig.createBlockColorCalculator(this);
     }
 
+    /**
+     * BlueMap 5.7 binary compatibility for legacy addons.
+     *
+     * @deprecated Use {@link #createBlockColorCalculator()}.
+     */
+    @Deprecated
+    public de.bluecolored.bluemap.core.resources.BlockColorCalculatorFactory getColorCalculatorFactory() {
+        return new de.bluecolored.bluemap.core.resources.BlockColorCalculatorFactory(this);
+    }
+
+    /**
+     * BlueMap 5.7 binary compatibility for legacy addons.
+     *
+     * @deprecated Use {@link #getModels()}.
+     */
+    @Deprecated
+    public @Nullable Model getModel(ResourcePath<Model> path) {
+        Model model = models.get(path);
+        return model != null ? model : MISSING_BLOCK_MODEL.getResource(models::get);
+    }
+
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends ResourcePackExtension> T getExtension(Extension<T> extensionType) {
         return (T) extensions.get(extensionType);
