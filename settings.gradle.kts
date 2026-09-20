@@ -22,6 +22,9 @@ includeBuild("api")
 include(":core")
 include(":common")
 
+include(":model-loaders-addon")
+project(":model-loaders-addon").projectDir = file("compat/model-loaders-addon")
+
 implementation("cli")
 implementation("fabric")
 implementation("forge")
