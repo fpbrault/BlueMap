@@ -44,10 +44,12 @@ jobs:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
-      - name: Build NeoForge artifact
-        run: ./gradlew :neoforge:release --stacktrace
-      - name: Upload NeoForge artifact
+      - name: Build NeoForge and ModelLoaders artifacts
+        run: ./gradlew :neoforge:release :model-loaders-addon:shadowJar --stacktrace
+      - name: Upload compatibility artifacts
         uses: actions/upload-artifact@v7
         with:
           name: bluemap-v5.23-mc1.21.1-neoforge
-          path: build/release/*
+          path: |
+            build/release/*
+            compat/model-loaders-addon/build/libs/*.jar
