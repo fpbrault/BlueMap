@@ -33,6 +33,11 @@ dependencies {
 
     jarJar ( "${libs.flow.math.get().group}:${libs.flow.math.get().name}:[${libs.flow.math.get().version},)" )
 
+    // Keep an exact public BlueNBT copy for third-party BlueMap addons compiled
+    // against de.bluecolored.bluenbt.* (annotations and direct BlueNBT usage).
+    // BlueMap core itself uses the separately shaded/relocated private copy below.
+    jarJar ( "${libs.bluenbt.get().group}:${libs.bluenbt.get().name}:${libs.bluenbt.get().version}" )
+
     // BlueNBT is intentionally shaded/relocated instead of jar-in-jar.
     // On large NeoForge modpacks JarJar may unify compatible-looking versions from
     // different mods. BlueMap's chunk deserializer is sensitive to that runtime ABI,
