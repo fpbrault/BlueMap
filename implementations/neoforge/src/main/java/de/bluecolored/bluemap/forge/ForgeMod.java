@@ -38,7 +38,7 @@ import de.bluecolored.bluemap.core.util.Caches;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -142,7 +142,7 @@ public class ForgeMod implements Server {
 
     @Override
     public String getMinecraftVersion() {
-        return SharedConstants.getCurrentVersion().id();
+        return SharedConstants.getCurrentVersion().getId();
     }
 
     @Override
@@ -169,8 +169,9 @@ public class ForgeMod implements Server {
     public Optional<ServerWorld> getServerWorld(Object world) {
 
         if (world instanceof String) {
-            Identifier identifier = Identifier.tryParse((String) world);
-            if (identifier != null) world = serverInstance.getLevel(ResourceKey.create(Registries.DIMENSION, identifier));
+            ResourceLocation resourceLocation = ResourceLocation.tryParse((String) world);
+            if (resourceLocation != null)
+                world = serverInstance.getLevel(ResourceKey.create(Registries.DIMENSION, resourceLocation));
         }
 
         if (world instanceof ResourceKey) {

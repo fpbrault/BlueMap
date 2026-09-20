@@ -5,13 +5,12 @@ plugins {
     alias ( libs.plugins.neoforge.gradle )
 }
 
-val supportedMinecraftVersions = listOf(
-    "26.1", "26.1.1", "26.1.2",
-    "26.2"
-)
+val supportedMinecraftVersions = listOf("1.21.1")
 
 val minecraftVersion = supportedMinecraftVersions.first()
-val neoVersion = "26.1.0.0-alpha.15+pre-3"
+val minecraftVersionRange = "[1.21.1,1.21.2)"
+val neoVersion = "21.1.250"
+val loaderVersion = "4"
 
 val shadowInclude: Configuration by configurations.creating
 configurations.api.get().extendsFrom(shadowInclude)
@@ -75,6 +74,10 @@ tasks.shadowJar {
 tasks.withType(ProcessResources::class).configureEach {
     val replacements = mapOf(
         "version" to project.version,
+        "minecraft_version" to minecraftVersion,
+        "minecraft_version_range" to minecraftVersionRange,
+        "neo_version" to neoVersion,
+        "loader_version" to loaderVersion,
     )
     inputs.properties(replacements)
     filesMatching(listOf(
