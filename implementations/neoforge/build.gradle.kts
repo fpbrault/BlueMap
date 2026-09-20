@@ -5,13 +5,12 @@ plugins {
     alias ( libs.plugins.neoforge.gradle )
 }
 
-val supportedMinecraftVersions = listOf(
-    "26.1", "26.1.1", "26.1.2",
-    "26.2"
-)
+val supportedMinecraftVersions = listOf("1.21.1")
 
 val minecraftVersion = supportedMinecraftVersions.first()
-val neoVersion = "26.1.0.0-alpha.15+pre-3"
+val minecraftVersionRange = "[1.21.1,1.21.2)"
+val neoVersion = "21.1.248"
+val loaderVersion = "4"
 
 val shadowInclude: Configuration by configurations.creating
 configurations.api.get().extendsFrom(shadowInclude)
@@ -33,7 +32,17 @@ dependencies {
     }
 
     jarJar ( "${libs.flow.math.get().group}:${libs.flow.math.get().name}:[${libs.flow.math.get().version},)" )
-    jarJar ( "${libs.bluenbt.get().group}:${libs.bluenbt.get().name}:[${libs.bluenbt.get().version},)" )
+
+    // Keep an exact public BlueNBT copy for third-party BlueMap addons compiled
+    // against de.bluecolored.bluenbt.* (annotations and direct BlueNBT usage).
+    // BlueMap core itself uses the separately shaded/relocated private copy below.
+    jarJar ( "${libs.bluenbt.get().group}:${libs.bluenbt.get().name}:${libs.bluenbt.get().version}" )
+
+    // BlueNBT is intentionally shaded/relocated instead of jar-in-jar.
+    // On large NeoForge modpacks JarJar may unify compatible-looking versions from
+    // different mods. BlueMap's chunk deserializer is sensitive to that runtime ABI,
+    // so keep the exact 3.5.1 implementation private to BlueMap.
+    shadowInclude ( libs.bluenbt )
 }
 
 tasks.shadowJar {
@@ -42,8 +51,10 @@ tasks.shadowJar {
     // exclude jarInJar
     dependencies {
         exclude( dependency ( libs.flow.math.get() ) )
-        exclude( dependency ( libs.bluenbt.get() ) )
     }
+
+    // BlueNBT
+    relocate ("de.bluecolored.bluenbt", "de.bluecolored.shadow.bluenbt")
 
     // adventure
     relocate ("net.kyori", "de.bluecolored.shadow.adventure")
@@ -75,6 +86,10 @@ tasks.shadowJar {
 tasks.withType(ProcessResources::class).configureEach {
     val replacements = mapOf(
         "version" to project.version,
+        "minecraft_version" to minecraftVersion,
+        "minecraft_version_range" to minecraftVersionRange,
+        "neo_version" to neoVersion,
+        "loader_version" to loaderVersion,
     )
     inputs.properties(replacements)
     filesMatching(listOf(

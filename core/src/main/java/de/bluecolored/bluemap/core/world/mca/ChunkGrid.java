@@ -192,7 +192,9 @@ public class ChunkGrid<T> {
             }
         }
 
-        Logger.global.logDebug("Unexpected exception trying to load chunk ('%s' -> x:%d, z:%d): %s".formatted(regionFolder, x, z, loadException));
+        String message = "Unexpected exception trying to load chunk ('%s' -> x:%d, z:%d)".formatted(regionFolder, x, z);
+        Logger.global.logDebug(message + ": " + loadException);
+        Logger.global.noFloodError("chunk-load-exception", message, loadException);
         return chunkLoader.erroredChunk();
     }
 

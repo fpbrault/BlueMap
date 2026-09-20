@@ -26,7 +26,7 @@ package de.bluecolored.bluemap.forge;
 
 import de.bluecolored.bluemap.common.serverinterface.ServerWorld;
 import de.bluecolored.bluemap.core.util.Key;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
@@ -52,7 +52,7 @@ public class ForgeWorld implements ServerWorld {
         this.worldFolder = server.getServerDirectory()
                 .resolve(server.getWorldPath(LevelResource.ROOT));
 
-        Identifier id = delegate.dimension().identifier();
+        ResourceLocation id = delegate.dimension().location();
         this.dimension = new Key(id.getNamespace(), id.getPath());
     }
 
