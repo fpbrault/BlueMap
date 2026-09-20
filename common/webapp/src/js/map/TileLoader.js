@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import {pathFromCoords} from "../util/Utils";
+import {generateCacheHash, pathFromCoords} from "../util/Utils";
 import {BufferGeometryLoader, FileLoader, Mesh, Material} from "three";
 import {PRBMLoader} from "./hires/PRBMLoader";
 
@@ -56,11 +56,12 @@ export class TileLoader {
         this.bufferGeometryLoader = new PRBMLoader();
     }
 
-    load = (tileX, tileZ, cancelCheck = () => false) => {
+    load = (tileX, tileZ, cancelCheck = () => false, force = false) => {
         let tileUrl = this.tilePath + pathFromCoords(tileX, tileZ) + '.prbm';
+        const cacheHash = force ? generateCacheHash() : this.tileCacheHash;
 
         return new Promise((resolve, reject) => {
-            this.fileLoader.load(tileUrl + '?' + this.tileCacheHash,
+            this.fileLoader.load(tileUrl + '?' + cacheHash,
                 async data => {
 
                     await this.loadBlocker();

@@ -30,6 +30,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
 @ConfigSerializable
@@ -40,6 +41,9 @@ public class WebserverConfig {
 
     private String ip = "0.0.0.0";
     private int port = 8100;
+
+    private long tileCacheMaxAge = TimeUnit.DAYS.toSeconds(1);
+    private boolean liveTileUpdates = true;
 
     private LogConfig log = new LogConfig();
 
@@ -67,6 +71,14 @@ public class WebserverConfig {
 
     public int getPort() {
         return port;
+    }
+
+    public long getTileCacheMaxAge() {
+        return tileCacheMaxAge;
+    }
+
+    public boolean isLiveTileUpdates() {
+        return liveTileUpdates;
     }
 
     public LogConfig getLog() {

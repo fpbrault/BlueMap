@@ -245,8 +245,8 @@ public class WorldRegionRenderTask implements MapRenderTask {
         // clear tile-actions
         tileActions = null;
 
-        // save map (at most, every minute)
-        map.save(TimeUnit.MINUTES.toMillis(1));
+        // save map (at most, every 15 seconds) so low-res updates become visible quickly
+        map.save(TimeUnit.SECONDS.toMillis(15));
     }
 
     @Override

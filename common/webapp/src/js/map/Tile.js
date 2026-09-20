@@ -50,19 +50,21 @@ export class Tile {
      * @param tileLoader {TileLoader}
      * @returns {Promise<void>}
      */
-    load(tileLoader) {
+    load(tileLoader, force = false) {
         if (this.loading) return Promise.reject("tile is already loading!");
         this.loading = true;
 
-        this.unload();
-
         this.unloaded = false;
-        return tileLoader.load(this.x, this.z, () => this.unloaded)
+        return tileLoader.load(this.x, this.z, () => this.unloaded, force)
             .then(model => {
                 if (this.unloaded){
                     Tile.disposeModel(model);
                     return;
                 }
+
+                // Keep the old model visible until the replacement is ready.
+                this.unload();
+                this.unloaded = false;
 
                 this.model = model;
                 this.onLoad(this);

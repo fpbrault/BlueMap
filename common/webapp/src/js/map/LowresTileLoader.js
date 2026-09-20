@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import {pathFromCoords} from "../util/Utils";
+import {generateCacheHash, pathFromCoords} from "../util/Utils";
 import {
     TextureLoader,
     Mesh,
@@ -61,12 +61,13 @@ export class LowresTileLoader {
         this.geometry.translate(tileSettings.tileSize.x / 2 + 1, 0, tileSettings.tileSize.x / 2 + 1);
     }
 
-    load = (tileX, tileZ, cancelCheck = () => false) => {
+    load = (tileX, tileZ, cancelCheck = () => false, force = false) => {
         let tileUrl = this.tilePath + this.lod + "/" + pathFromCoords(tileX, tileZ) + '.png';
+        const cacheHash = force ? generateCacheHash() : this.tileCacheHash;
 
         //await this.loadBlocker();
         return new Promise((resolve, reject) => {
-            this.textureLoader.load(tileUrl + '?' + this.tileCacheHash,
+            this.textureLoader.load(tileUrl + '?' + cacheHash,
                 async texture => {
                     texture.anisotropy = 1;
                     texture.generateMipmaps = false;

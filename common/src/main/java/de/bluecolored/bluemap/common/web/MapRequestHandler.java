@@ -29,32 +29,77 @@ import de.bluecolored.bluemap.common.live.LiveMarkersDataSupplier;
 import de.bluecolored.bluemap.common.live.LivePlayersDataSupplier;
 import de.bluecolored.bluemap.common.serverinterface.Server;
 import de.bluecolored.bluemap.common.serverinterface.ServerWorld;
+import de.bluecolored.bluemap.common.web.http.HttpResponse;
+import de.bluecolored.bluemap.common.web.http.HttpStatusCode;
 import de.bluecolored.bluemap.core.map.BmMap;
 import de.bluecolored.bluemap.core.storage.MapStorage;
 import de.bluecolored.bluemap.core.storage.Storage;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class MapRequestHandler extends RoutingRequestHandler {
 
+    @Nullable private final TileUpdateTracker tileUpdateTracker;
+
     public MapRequestHandler(BmMap map, Server serverInterface, PluginConfig pluginConfig, Predicate<UUID> playerFilter) {
+        this(map, serverInterface, pluginConfig, playerFilter, TimeUnit.DAYS.toSeconds(1), true);
+    }
+
+    public MapRequestHandler(BmMap map, Server serverInterface, PluginConfig pluginConfig,
+                             Predicate<UUID> playerFilter, long tileCacheMaxAge, boolean liveTileUpdates) {
         this(map.getStorage(),
                 createPlayersDataSupplier(map, serverInterface, pluginConfig, playerFilter),
-                new LiveMarkersDataSupplier(map.getMarkerSets()));
+                new LiveMarkersDataSupplier(map.getMarkerSets()),
+                liveTileUpdates ? new TileUpdateTracker() : null,
+                tileCacheMaxAge);
+
+        if (tileUpdateTracker != null) {
+            map.getHiresModelManager().addTileUpdateListener(tile -> tileUpdateTracker.onTileUpdate(tile, 0));
+            map.getLowresTileManager().addTileUpdateListener(tileUpdateTracker::onTileUpdate);
+        }
     }
 
     public MapRequestHandler(MapStorage mapStorage) {
-        this(mapStorage, null, null);
+        this(mapStorage, TimeUnit.DAYS.toSeconds(1));
     }
 
-    public MapRequestHandler(MapStorage mapStorage,
-                             @Nullable Supplier<String> livePlayersDataSupplier,
-                             @Nullable Supplier<String> liveMarkerDataSupplier) {
+    public MapRequestHandler(MapStorage mapStorage, long tileCacheMaxAge) {
+        this(mapStorage, null, null, null, tileCacheMaxAge);
+    }
 
-        register(".*", new MapStorageRequestHandler(mapStorage));
+    private MapRequestHandler(MapStorage mapStorage,
+                              @Nullable Supplier<String> livePlayersDataSupplier,
+                              @Nullable Supplier<String> liveMarkerDataSupplier,
+                              @Nullable TileUpdateTracker tileUpdateTracker,
+                              long tileCacheMaxAge) {
+        this.tileUpdateTracker = tileUpdateTracker;
+
+        MapStorageRequestHandler storageRequestHandler = new MapStorageRequestHandler(mapStorage);
+        storageRequestHandler.setTileCacheMaxAge(tileCacheMaxAge);
+        register(".*", storageRequestHandler);
+
+        if (tileUpdateTracker != null) {
+            register("live/tiles\\.json", "", request -> {
+                Long since = null;
+                String sinceValue = request.getGETParams().get("since");
+                if (sinceValue != null) {
+                    try {
+                        since = Long.parseLong(sinceValue);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
+                HttpResponse response = new HttpResponse(HttpStatusCode.OK);
+                response.addHeader("Cache-Control", "no-store");
+                response.addHeader("Content-Type", "application/json");
+                response.setData(tileUpdateTracker.snapshot(since));
+                return response;
+            });
+        }
 
         if (livePlayersDataSupplier != null) {
             register("live/players\\.json", "", new JsonDataRequestHandler(

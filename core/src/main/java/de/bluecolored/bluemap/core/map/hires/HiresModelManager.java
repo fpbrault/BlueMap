@@ -38,11 +38,15 @@ import lombok.Getter;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 public class HiresModelManager {
 
     private final GridStorage storage;
     private final HiresModelRenderer renderer;
+    private final List<Consumer<Vector2i>> tileUpdateListeners = new CopyOnWriteArrayList<>();
 
     @Getter
     private final Grid tileGrid;
@@ -100,6 +104,14 @@ public class HiresModelManager {
         );
     }
 
+    public void addTileUpdateListener(Consumer<Vector2i> listener) {
+        tileUpdateListeners.add(listener);
+    }
+
+    public void removeTileUpdateListener(Consumer<Vector2i> listener) {
+        tileUpdateListeners.remove(listener);
+    }
+
     private void save(final ArrayTileModel model, Vector2i tile) {
         try (
                 OutputStream out = storage.write(tile.getX(), tile.getY());
@@ -108,6 +120,11 @@ public class HiresModelManager {
             modelWriter.write(model);
         } catch (IOException e){
             Logger.global.logError("Failed to save hires model: " + tile, e);
+            return;
+        }
+
+        for (Consumer<Vector2i> listener : tileUpdateListeners) {
+            listener.accept(tile);
         }
     }
 

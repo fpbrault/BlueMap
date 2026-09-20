@@ -55,6 +55,7 @@ public class MapStorageRequestHandler implements HttpRequestHandler {
     private static final Pattern TILE_PATTERN = Pattern.compile("tiles/([\\d/]+)/x(-?[\\d/]+)z(-?[\\d/]+).*");
 
     private @NonNull MapStorage mapStorage;
+    private long tileCacheMaxAge = TimeUnit.DAYS.toSeconds(1);
 
     @SuppressWarnings("resource")
     @Override
@@ -79,8 +80,11 @@ public class MapStorageRequestHandler implements HttpRequestHandler {
                 if (in == null) return new HttpResponse(HttpStatusCode.NO_CONTENT);
 
                 HttpResponse response = new HttpResponse(HttpStatusCode.OK);
-                response.addHeader("Cache-Control", "public");
-                response.addHeader("Cache-Control", "max-age=" + TimeUnit.DAYS.toSeconds(1));
+                if (tileCacheMaxAge <= 0) {
+                    response.addHeader("Cache-Control", "no-cache");
+                } else {
+                    response.addHeader("Cache-Control", "public, max-age=" + tileCacheMaxAge);
+                }
 
                 if (lod == 0) response.addHeader("Content-Type", "application/octet-stream");
                 else response.addHeader("Content-Type", "image/png");

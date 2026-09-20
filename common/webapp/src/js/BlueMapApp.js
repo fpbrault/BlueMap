@@ -28,7 +28,7 @@ import {MapControls} from "./controls/map/MapControls";
 import {FreeFlightControls} from "./controls/freeflight/FreeFlightControls";
 import {FileLoader, MathUtils, Vector3} from "three";
 import {Map as BlueMapMap} from "./map/Map";
-import {alert, animate, EasingFunctions, generateCacheHash} from "./util/Utils";
+import {alert, animate, EasingFunctions, generateCacheHash, hashTile} from "./util/Utils";
 import {MainMenu} from "./MainMenu";
 import {PopupMarker} from "./PopupMarker";
 import {MarkerSet} from "./markers/MarkerSet";
@@ -118,6 +118,8 @@ export class BlueMapApp {
         this.mapViewer.markers.add(this.popupMarkerSet);
 
         this.updateLoop = null;
+        this.tileUpdateSequence = null;
+        this.tileUpdateSupported = true;
 
         this.hashUpdateTimeout = null;
         this.viewAnimation = null;
@@ -194,7 +196,86 @@ export class BlueMapApp {
 
     update = async () => {
         await this.followPlayerMarkerWorld();
+        await this.updateLiveTiles();
         this.updateLoop = setTimeout(this.update, 1000);
+    }
+
+    async updateLiveTiles() {
+        const map = this.mapViewer.map;
+        if (!map || !this.tileUpdateSupported) return;
+
+        const previousSequence = this.tileUpdateSequence;
+        let url = map.data.liveDataRoot + "/live/tiles.json";
+        if (previousSequence !== null) {
+            url += "?since=" + encodeURIComponent(previousSequence);
+        }
+
+        try {
+            const response = await fetch(url, {cache: "no-store"});
+
+            // Ignore a response from a map that was switched away while the request was in flight.
+            if (this.mapViewer.map !== map) return;
+
+            if (response.status === 404) {
+                this.tileUpdateSupported = false;
+                return;
+            }
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (!Number.isSafeInteger(data.sequence)) return;
+
+            // The first request establishes the current server sequence. The newly loaded map
+            // already contains all older changes, so there is nothing to replay.
+            if (previousSequence === null) {
+                this.tileUpdateSequence = data.sequence;
+                return;
+            }
+
+            if (data.reset) {
+                this.reloadLoadedTiles(map);
+            } else if (Array.isArray(data.updates)) {
+                for (const update of data.updates) {
+                    this.reloadTile(map, update);
+                }
+            }
+
+            this.tileUpdateSequence = data.sequence;
+        } catch (error) {
+            console.debug("Failed to poll BlueMap tile updates", error);
+        }
+    }
+
+    reloadTile(map, update) {
+        if (!Number.isInteger(update?.x) || !Number.isInteger(update?.y) || !Number.isInteger(update?.lod)) return;
+
+        const manager = update.lod > 0
+            ? map.lowresTileManager?.[update.lod - 1]
+            : map.hiresTileManager;
+
+        if (!manager || manager.unloaded) return;
+
+        const tile = manager.tiles.get(hashTile(update.x, update.y));
+        if (tile && !tile.loading) {
+            tile.load(manager.tileLoader, true).catch(() => {});
+        }
+    }
+
+    reloadLoadedTiles(map) {
+        const managers = [
+            map.hiresTileManager,
+            ...(map.lowresTileManager || [])
+        ];
+
+        for (const manager of managers) {
+            if (!manager || manager.unloaded) continue;
+
+            for (const tile of manager.tiles.values()) {
+                if (tile.loaded && !tile.loading) {
+                    tile.load(manager.tileLoader, true).catch(() => {});
+                }
+            }
+        }
     }
 
     async followPlayerMarkerWorld() {
@@ -250,6 +331,9 @@ export class BlueMapApp {
     async switchMap(mapId, resetCamera = true) {
         let map = this.mapsMap.get(mapId);
         if (!map) return Promise.reject(`There is no map with the id "${mapId}" loaded!`);
+
+        this.tileUpdateSequence = null;
+        this.tileUpdateSupported = true;
 
         if (this.playerMarkerManager) this.playerMarkerManager.dispose();
         if (this.markerFileManager) this.markerFileManager.dispose();
