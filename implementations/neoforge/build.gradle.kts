@@ -32,7 +32,12 @@ dependencies {
     }
 
     jarJar ( "${libs.flow.math.get().group}:${libs.flow.math.get().name}:[${libs.flow.math.get().version},)" )
-    jarJar ( "${libs.bluenbt.get().group}:${libs.bluenbt.get().name}:[${libs.bluenbt.get().version},)" )
+
+    // BlueNBT is intentionally shaded/relocated instead of jar-in-jar.
+    // On large NeoForge modpacks JarJar may unify compatible-looking versions from
+    // different mods. BlueMap's chunk deserializer is sensitive to that runtime ABI,
+    // so keep the exact 3.5.1 implementation private to BlueMap.
+    shadowInclude ( libs.bluenbt )
 }
 
 tasks.shadowJar {
@@ -41,8 +46,10 @@ tasks.shadowJar {
     // exclude jarInJar
     dependencies {
         exclude( dependency ( libs.flow.math.get() ) )
-        exclude( dependency ( libs.bluenbt.get() ) )
     }
+
+    // BlueNBT
+    relocate ("de.bluecolored.bluenbt", "de.bluecolored.shadow.bluenbt")
 
     // adventure
     relocate ("net.kyori", "de.bluecolored.shadow.adventure")
