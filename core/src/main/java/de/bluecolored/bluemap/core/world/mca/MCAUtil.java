@@ -39,6 +39,9 @@ import de.bluecolored.bluenbt.NamingStrategy;
 import de.bluecolored.bluenbt.TypeToken;
 import org.jetbrains.annotations.Contract;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 public class MCAUtil {
@@ -48,7 +51,11 @@ public class MCAUtil {
     @Contract(value = "_ -> param1", mutates = "param1")
     public static BlueNBT addCommonNbtSettings(BlueNBT nbt) {
 
-        nbt.setNamingStrategy(NamingStrategy.lowerCaseWithDelimiter("_"));
+        NamingStrategy defaultNamingStrategy = NamingStrategy.lowerCaseWithDelimiter("_");
+        nbt.setNamingStrategy(field -> {
+            String legacyName = getLegacyNbtName(field);
+            return legacyName != null ? legacyName : defaultNamingStrategy.apply(field);
+        });
 
         nbt.register(TypeToken.of(BlockState.class), new BlockStateDeserializer());
         nbt.register(TypeToken.of(Key.class), new KeyDeserializer());
@@ -63,6 +70,22 @@ public class MCAUtil {
         nbt.register(TypeToken.of(Entity.class), new EntityTypeResolver());
 
         return nbt;
+    }
+
+    private static String getLegacyNbtName(Field field) {
+        try {
+            for (Annotation annotation : field.getDeclaredAnnotations()) {
+                if (!"de.bluecolored.bluenbt.NBTName".equals(annotation.annotationType().getName())) continue;
+
+                Method valueMethod = annotation.annotationType().getMethod("value");
+                Object value = valueMethod.invoke(annotation);
+                if (value instanceof String[] names && names.length > 0) return names[0];
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // The compatibility annotation is optional. Fall back to BlueMap's normal naming strategy.
+        }
+
+        return null;
     }
 
     /**
