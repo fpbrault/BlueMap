@@ -1,6 +1,6 @@
 plugins {
     bluemap.java
-    alias(libs.plugins.shadow)
+    id("com.gradleup.shadow")
 }
 
 group = "me.owies"
