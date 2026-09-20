@@ -6,10 +6,6 @@ on:
       - "v5.23-fpb"
   workflow_dispatch:
 
-concurrency:
-  group: bluemap-1.21.1-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     name: "Java 21 tests"
