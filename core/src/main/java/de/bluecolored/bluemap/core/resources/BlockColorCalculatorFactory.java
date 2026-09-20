@@ -3,7 +3,6 @@
  */
 package de.bluecolored.bluemap.core.resources;
 
-import de.bluecolored.bluemap.core.map.hires.block.color.BlockColorCalculator;
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack;
 import de.bluecolored.bluemap.core.util.math.Color;
 import de.bluecolored.bluemap.core.world.block.BlockNeighborhood;
@@ -28,7 +27,7 @@ public class BlockColorCalculatorFactory {
         this.resourcePack = resourcePack;
     }
 
-    public BlockColorCalculator createCalculatorDelegate() {
+    public de.bluecolored.bluemap.core.map.hires.block.color.BlockColorCalculator createCalculatorDelegate() {
         if (resourcePack == null) {
             return (block, state, target) -> target.set(1f, 1f, 1f, 1f, true);
         }
