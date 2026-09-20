@@ -6,6 +6,13 @@ plugins {
 group = "me.owies"
 version = "0.5.0-java21"
 
+repositories {
+    // BlueMapModelLoaders upstream publishes/resolves BMUtils through this repository.
+    // BlueMap's root repository declaration filters it to de.bluecolored.*, so the
+    // addon needs an unfiltered declaration here for com.technicjelle:BMUtils.
+    maven("https://repo.bluecolored.de/releases")
+}
+
 dependencies {
     implementation("com.technicjelle:BMUtils:4.3.1")
     implementation(libs.caffeine)
