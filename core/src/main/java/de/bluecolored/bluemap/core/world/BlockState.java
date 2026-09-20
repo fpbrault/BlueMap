@@ -68,6 +68,26 @@ public class BlockState {
         this(id, Collections.emptyMap());
     }
 
+    /**
+     * BlueMap 5.7 binary compatibility for legacy addons.
+     *
+     * @deprecated Prefer {@link #BlockState(Key)}.
+     */
+    @Deprecated
+    public BlockState(String id) {
+        this(Key.parse(id), Collections.emptyMap());
+    }
+
+    /**
+     * BlueMap 5.7 binary compatibility for legacy addons.
+     *
+     * @deprecated Prefer {@link #BlockState(Key, Map)}.
+     */
+    @Deprecated
+    public BlockState(String id, Map<String, String> properties) {
+        this(Key.parse(id), properties);
+    }
+
     public BlockState(Key id, Map<String, String> properties) {
         this.id = id;
         this.hashed = false;
