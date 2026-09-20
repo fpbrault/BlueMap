@@ -405,7 +405,7 @@ public class ResourcePack extends Pack {
      * @deprecated Use {@link #getModels()}.
      */
     @Deprecated
-    public @Nullable Model getModel(ResourcePath<Model> path) {
+    public Model getModel(ResourcePath<Model> path) {
         Model model = models.get(path);
         return model != null ? model : MISSING_BLOCK_MODEL.getResource(models::get);
     }
